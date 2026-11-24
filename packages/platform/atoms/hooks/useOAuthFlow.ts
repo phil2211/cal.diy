@@ -1,12 +1,10 @@
-import type { AxiosError, AxiosRequestConfig } from "axios";
- 
+import type { ApiResponse } from "@calcom/platform-types";
+import type { AxiosError } from "axios";
 import { debounce } from "lodash";
 import { useEffect, useState } from "react";
 import usePrevious from "react-use/lib/usePrevious";
-
-import type { ApiResponse } from "@calcom/platform-types";
-
 import http from "../lib/http";
+import { readAxiosErrorConfig } from "../lib/normalizeError";
 
 export interface useOAuthProps {
   accessToken?: string;
@@ -37,8 +35,8 @@ export const useOAuthFlow = ({
     const interceptorId =
       clientAccessToken && http.getAuthorizationHeader()
         ? http.responseInterceptor.use(undefined, async (err: AxiosError) => {
-            const originalRequest = err.config as AxiosRequestConfig;
-            if (refreshUrl && err.response?.status === 498 && !isRefreshing) {
+            const originalRequest = readAxiosErrorConfig(err);
+            if (refreshUrl && err?.response?.status === 498 && !isRefreshing && originalRequest) {
               setIsRefreshing(true);
               onTokenRefreshStart?.();
               const refreshedToken = await debouncedRefresh(refreshUrl);
@@ -63,11 +61,22 @@ export const useOAuthFlow = ({
         : "";
 
     return () => {
-      if (interceptorId) {
+      // Axios assigns id 0 to the first interceptor. A truthy check never ejects it,
+      // so reschedule requests keep stacking handlers that re-read a missing config.
+      if (typeof interceptorId === "number") {
         http.responseInterceptor.eject(interceptorId);
       }
     };
-  }, [clientAccessToken, isRefreshing, refreshUrl, onError, onSuccess, onTokenRefreshStart, onTokenRefreshSuccess, onTokenRefreshError]);
+  }, [
+    clientAccessToken,
+    isRefreshing,
+    refreshUrl,
+    onError,
+    onSuccess,
+    onTokenRefreshStart,
+    onTokenRefreshSuccess,
+    onTokenRefreshError,
+  ]);
 
   useEffect(() => {
     if (accessToken && http.getUrl() && prevAccessToken !== accessToken) {
@@ -95,7 +104,17 @@ export const useOAuthFlow = ({
           setClientAccessToken(accessToken);
         });
     }
-  }, [accessToken, clientId, refreshUrl, prevAccessToken, onError, onSuccess, onTokenRefreshStart, onTokenRefreshSuccess, onTokenRefreshError]);
+  }, [
+    accessToken,
+    clientId,
+    refreshUrl,
+    prevAccessToken,
+    onError,
+    onSuccess,
+    onTokenRefreshStart,
+    onTokenRefreshSuccess,
+    onTokenRefreshError,
+  ]);
 
   return { isRefreshing, currentAccessToken: clientAccessToken };
 };
