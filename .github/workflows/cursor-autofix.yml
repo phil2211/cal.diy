@@ -12,7 +12,7 @@ jobs:
     if: github.event.label.name == 'autofix'
     runs-on: ubuntu-latest
     steps:
-      - name: Issue an Cursor übergeben
+      - name: Issue sent to Cursor
         env:
           URL: ${{ secrets.CURSOR_AUTOMATION_URL }}
           KEY: ${{ secrets.CURSOR_WEBHOOK_KEY }}
@@ -33,7 +33,7 @@ jobs:
             -H "Content-Type: application/json" \
             -d "$payload"
 
-      - name: Kommentar im Issue
+      - name: Comment in the issue
         if: success()
         env:
           GH_TOKEN: ${{ github.token }}
