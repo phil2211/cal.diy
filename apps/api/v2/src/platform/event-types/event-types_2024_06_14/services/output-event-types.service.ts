@@ -25,6 +25,7 @@ import type {
 } from "@calcom/prisma/client";
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { ProfileMinimal, UsersService } from "@/modules/users/services/users.service";
 import {
   BookingFieldSchema,
   CustomField,
@@ -41,7 +42,6 @@ import {
   transformRequiresConfirmationInternalToApi,
   transformSeatsInternalToApi,
 } from "@/platform/event-types/event-types_2024_06_14/transformers";
-import { ProfileMinimal, UsersService } from "@/modules/users/services/users.service";
 
 type EventTypeUser = {
   id: number;
@@ -120,6 +120,7 @@ type Input = Pick<
   | "maxActiveBookingsPerBooker"
   | "maxActiveBookingPerBookerOfferReschedule"
   | "disableCancelling"
+  | "minimumCancellationNotice"
   | "disableRescheduling"
   | "minimumRescheduleNotice"
   | "canSendCalVideoTranscriptionEmails"
@@ -173,6 +174,7 @@ export class OutputEventTypesService_2024_06_14 {
       hidden,
       bookingRequiresAuthentication,
       disableCancelling,
+      minimumCancellationNotice,
       disableRescheduling,
       minimumRescheduleNotice,
       canSendCalVideoTranscriptionEmails,
@@ -219,7 +221,10 @@ export class OutputEventTypesService_2024_06_14 {
       disableRescheduling,
       minimumRescheduleNotice
     );
-    const disableCancellingOutput = this.transformDisableCancelling(disableCancelling);
+    const disableCancellingOutput = this.transformDisableCancelling(
+      disableCancelling,
+      minimumCancellationNotice
+    );
     const calVideoSettingsOutput = this.transformCalVideoSettings(
       calVideoSettings,
       canSendCalVideoTranscriptionEmails
@@ -507,8 +512,19 @@ export class OutputEventTypesService_2024_06_14 {
     return { disabled: false };
   }
 
-  transformDisableCancelling(disableCancelling: boolean | null | undefined) {
-    return { disabled: disableCancelling === true };
+  transformDisableCancelling(
+    disableCancelling: boolean | null | undefined,
+    minimumCancellationNotice: number | null | undefined
+  ) {
+    if (disableCancelling === true) {
+      return { disabled: true };
+    }
+
+    if (minimumCancellationNotice && minimumCancellationNotice > 0) {
+      return { disabled: false, minutesBefore: minimumCancellationNotice };
+    }
+
+    return { disabled: false };
   }
 
   transformCalVideoSettings(

@@ -79,6 +79,7 @@ export type EventAdvancedTabCustomClassNames = {
   };
   requiresConfirmation?: RequiresConfirmationCustomClassNames;
   disableRescheduling?: DisableReschedulingCustomClassNames;
+  disableCancelling?: DisableReschedulingCustomClassNames;
   bookerEmailVerification?: SettingsToggleClassNames;
   canSendCalVideoTranscriptionEmails?: SettingsToggleClassNames;
   calendarNotes?: SettingsToggleClassNames;
@@ -520,7 +521,6 @@ export const EventAdvancedTab = ({
   const hideOrganizerEmailLocked = shouldLockDisableProps("hideOrganizerEmail");
   const customReplyToEmailLocked = shouldLockDisableProps("customReplyToEmail");
 
-  const disableCancellingLocked = shouldLockDisableProps("disableCancelling");
   const allowReschedulingCancelledBookingsLocked = shouldLockDisableProps(
     "allowReschedulingCancelledBookings"
   );
@@ -531,6 +531,7 @@ export const EventAdvancedTab = ({
     multiplePrivateLinksLocked.disabled = true;
   }
 
+  const [disableCancelling, setDisableCancelling] = useState(eventType.disableCancelling || false);
   const [disableRescheduling, setDisableRescheduling] = useState(eventType.disableRescheduling || false);
 
   const [allowReschedulingCancelledBookings, setallowReschedulingCancelledBookings] = useState(
@@ -669,7 +670,9 @@ export const EventAdvancedTab = ({
       {!isPlatform && (
         <Controller
           name="requiresCancellationReason"
-          defaultValue={eventType.requiresCancellationReason ?? CancellationReasonRequirement.MANDATORY_HOST_ONLY}
+          defaultValue={
+            eventType.requiresCancellationReason ?? CancellationReasonRequirement.MANDATORY_HOST_ONLY
+          }
           render={({ field: { value, onChange } }) => {
             const cancellationReasonOptions = [
               { value: CancellationReasonRequirement.MANDATORY_BOTH, label: t("mandatory_for_both") },
@@ -716,29 +719,18 @@ export const EventAdvancedTab = ({
 
       {!isPlatform && (
         <>
-          <Controller
-            name="disabledCancelling"
-            render={({ field: { onChange, value } }) => (
-              <SettingsToggle
-                labelClassName="text-sm"
-                toggleSwitchAtTheEnd={true}
-                switchContainerClassName="border-subtle rounded-lg border py-6 px-4 sm:px-6"
-                title={t("disable_cancelling")}
-                data-testid="disable-cancelling-toggle"
-                {...disableCancellingLocked}
-                description={
-                  <LearnMoreLink
-                    t={t}
-                    i18nKey="description_disable_cancelling"
-                    href="https://cal.com/help/event-types/disable-canceling-rescheduling#disable-cancelling"
-                  />
-                }
-                checked={value}
-                onCheckedChange={(val) => {
-                  onChange(val);
-                }}
-              />
-            )}
+          <DisableReschedulingController
+            eventType={eventType}
+            disableRescheduling={disableCancelling}
+            onDisableRescheduling={setDisableCancelling}
+            switchFieldName="disabledCancelling"
+            noticeFieldName="minimumCancellationNotice"
+            titleKey="disable_cancelling"
+            descriptionKey="description_disable_cancelling"
+            learnMoreHref="https://cal.com/help/event-types/disable-canceling-rescheduling#disable-cancelling"
+            testId="disable-cancelling-toggle"
+            idPrefix="cancel-"
+            customClassNames={customClassNames?.disableCancelling}
           />
 
           <DisableReschedulingController

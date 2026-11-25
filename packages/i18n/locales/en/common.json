@@ -1519,6 +1519,7 @@
   "description_allow_rescheduling_cancelled_bookings": "When enabled, users will be able to create a new booking when trying to reschedule a cancelled booking",
   "disable_cancelling": "Disable Cancelling",
   "description_disable_cancelling": "Guests and Organizer can no longer cancel the event with calendar invite or email. <0>Learn more</0>",
+  "cancel_disabled_minimum_notice": "Cancelling is disabled within the minimum notice period before the event",
   "require_cancellation_reason": "Require cancellation reason",
   "require_cancellation_reason_description": "Ask for a reason when someone cancels a booking",
   "mandatory_for_both": "Mandatory for both",

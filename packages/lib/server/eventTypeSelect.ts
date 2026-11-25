@@ -38,6 +38,7 @@ export const eventTypeSelect = {
   requiresBookerEmailVerification: true,
   disableGuests: true,
   disableCancelling: true,
+  minimumCancellationNotice: true,
   disableRescheduling: true,
   minimumRescheduleNotice: true,
   allowReschedulingCancelledBookings: true,
