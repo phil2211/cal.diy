@@ -4,6 +4,7 @@ import { useBookerTime } from "@calcom/features/bookings/Booker/hooks/useBookerT
 import type { UseBookingFormReturnType } from "@calcom/features/bookings/Booker/hooks/useBookingForm";
 import { mapBookingToMutationInput, mapRecurringBookingToMutationInput } from "@calcom/features/bookings/lib";
 import type { BookingCreateBody } from "@calcom/features/bookings/lib/bookingCreateBodySchema";
+import { resolveBookingLocation } from "@calcom/features/bookings/lib/client/booking-event-form/resolveBookingLocation";
 import type { BookerEvent } from "@calcom/features/bookings/types";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { showToast } from "@calcom/ui/components/toast";
@@ -15,10 +16,15 @@ type Callbacks = { onSuccess?: () => void; onError?: (err: unknown) => void };
 type UseHandleBookingProps = {
   bookingForm: UseBookingFormReturnType["bookingForm"];
   event?: {
-    data?: Pick<
-      BookerEvent,
-      "id" | "isDynamic" | "metadata" | "recurringEvent" | "length" | "slug" | "schedulingType"
-    > | null;
+    data?:
+      | (Pick<
+          BookerEvent,
+          "id" | "isDynamic" | "metadata" | "recurringEvent" | "length" | "slug" | "schedulingType"
+        > & {
+          // Optional so callers that type a narrower event still pass the public event through.
+          locations?: BookerEvent["locations"];
+        })
+      | null;
   };
   metadata: Record<string, string>;
   hashedLink?: string | null;
@@ -119,7 +125,16 @@ export const useHandleBookEvent = ({
           callbacks
         );
       } else {
-        handleBooking({ ...mapBookingToMutationInput(bookingInput), locationUrl, tracking }, callbacks);
+        // The intercept callback runs before the API fills location in.
+        const location = resolveBookingLocation({
+          responses: values.responses,
+          eventLocations: event.data.locations,
+          locationUrl,
+        });
+        handleBooking(
+          { ...mapBookingToMutationInput(bookingInput), locationUrl, location, tracking },
+          callbacks
+        );
       }
       // Clears form values stored in store, so old values won't stick around.
       setFormValues({});

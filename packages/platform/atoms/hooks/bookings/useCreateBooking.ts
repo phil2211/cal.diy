@@ -1,13 +1,15 @@
-import { useMutation } from "@tanstack/react-query";
-
 import type { BookingCreateBody } from "@calcom/features/bookings/lib/bookingCreateBodySchema";
 import type { BookingResponse } from "@calcom/features/bookings/types";
 import { SUCCESS_STATUS } from "@calcom/platform-constants";
-import type { ApiResponse, ApiErrorResponse, ApiSuccessResponse } from "@calcom/platform-types";
-
+import type { ApiErrorResponse, ApiResponse, ApiSuccessResponse } from "@calcom/platform-types";
+import { useMutation } from "@tanstack/react-query";
 import http from "../../lib/http";
 
-export type UseCreateBookingInput = BookingCreateBody & { locationUrl?: string };
+export type UseCreateBookingInput = BookingCreateBody & {
+  locationUrl?: string;
+  // Resolved meeting location. Set before the request so handleCreateBooking can read it.
+  location?: string;
+};
 
 interface IUseCreateBooking {
   onSuccess?: (res: ApiSuccessResponse<BookingResponse>) => void;
