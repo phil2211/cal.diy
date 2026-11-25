@@ -1,19 +1,17 @@
-import { describe, it, expect } from "vitest";
-
 import { BookingStatus, SchedulingType } from "@calcom/prisma/enums";
-
+import { describe, expect, it } from "vitest";
 import {
-  getPendingActions,
-  getCancelEventAction,
-  getVideoOptionsActions,
-  getEditEventActions,
-  getAfterEventActions,
-  shouldShowPendingActions,
-  shouldShowEditActions,
-  shouldShowRecurringCancelAction,
-  isActionDisabled,
-  getActionLabel,
   type BookingActionContext,
+  getActionLabel,
+  getAfterEventActions,
+  getCancelEventAction,
+  getEditEventActions,
+  getPendingActions,
+  getVideoOptionsActions,
+  isActionDisabled,
+  shouldShowEditActions,
+  shouldShowPendingActions,
+  shouldShowRecurringCancelAction,
 } from "./bookingActions";
 
 const mockT = (key: string) => key;
@@ -73,6 +71,7 @@ function createMockContext(overrides: Partial<BookingActionContext> = {}): Booki
           darkEventTypeColor: "#ffffff",
         },
         disableCancelling: false,
+        minimumCancellationNotice: null,
         disableRescheduling: false,
         disableGuests: false,
         allowReschedulingPastBookings: false,
@@ -668,6 +667,53 @@ describe("Booking Actions", () => {
       it("should be disabled for rejected bookings", () => {
         const context = createMockContext({ isRejected: true });
         expect(isActionDisabled("cancel", context)).toBe(true);
+      });
+    });
+
+    describe("cancel action with minimum cancellation notice", () => {
+      function contextInsideNotice(overrides: Partial<BookingActionContext> = {}) {
+        const startTime = new Date(Date.now() + 30 * 60 * 1000);
+        const endTime = new Date(startTime.getTime() + 60 * 60 * 1000);
+        const base = createMockContext();
+        return createMockContext({
+          ...overrides,
+          booking: {
+            ...base.booking,
+            startTime: startTime.toISOString(),
+            endTime: endTime.toISOString(),
+            eventType: {
+              ...base.booking.eventType,
+              minimumCancellationNotice: 60,
+            },
+          },
+        });
+      }
+
+      it("disables cancel for an attendee inside the notice window", () => {
+        expect(isActionDisabled("cancel", contextInsideNotice({ isAttendee: true }))).toBe(true);
+      });
+
+      it("lets the organizer cancel inside the notice window", () => {
+        expect(isActionDisabled("cancel", contextInsideNotice({ isAttendee: false }))).toBe(false);
+      });
+
+      it("lets an attendee cancel outside the notice window", () => {
+        const startTime = new Date(Date.now() + 3 * 60 * 60 * 1000);
+        const endTime = new Date(startTime.getTime() + 60 * 60 * 1000);
+        const base = createMockContext();
+        const context = createMockContext({
+          isAttendee: true,
+          booking: {
+            ...base.booking,
+            startTime: startTime.toISOString(),
+            endTime: endTime.toISOString(),
+            eventType: {
+              ...base.booking.eventType,
+              minimumCancellationNotice: 60,
+            },
+          },
+        });
+        expect(isActionDisabled("cancel", context)).toBe(false);
       });
     });
 

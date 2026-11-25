@@ -223,6 +223,8 @@ model EventType {
   onlyShowFirstAvailableSlot               Boolean                @default(false)
   showOptimizedSlots                       Boolean?               @default(false)
   disableCancelling                        Boolean?               @default(false)
+  /// @zod.number.min(0)
+  minimumCancellationNotice                Int?
   disableRescheduling                      Boolean?               @default(false)
   /// @zod.number.min(0)
   minimumRescheduleNotice                  Int?

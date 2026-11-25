@@ -1,7 +1,7 @@
+import { isAttendeeBlockedByCancellationNotice } from "@calcom/features/bookings/lib/cancellation/isAttendeeBlockedByCancellationNotice";
 import { isWithinMinimumRescheduleNotice } from "@calcom/features/bookings/lib/reschedule/isWithinMinimumRescheduleNotice";
 import { BookingStatus, SchedulingType } from "@calcom/prisma/enums";
 import type { ActionType } from "@calcom/ui/components/table";
-
 import type { BookingItemProps } from "../types";
 
 export interface BookingActionContext {
@@ -95,14 +95,7 @@ export function getVideoOptionsActions(context: BookingActionContext): ActionTyp
 }
 
 export function getEditEventActions(context: BookingActionContext): ActionType[] {
-  const {
-    booking,
-    isBookingInPast,
-    isDisabledRescheduling,
-    getSeatReferenceUid,
-    isAttendee,
-    t,
-  } = context;
+  const { booking, isBookingInPast, isDisabledRescheduling, getSeatReferenceUid, isAttendee, t } = context;
   const seatReferenceUid = getSeatReferenceUid();
 
   const isReassignableRoundRobin =
@@ -239,7 +232,7 @@ export function isActionDisabled(actionId: string, context: BookingActionContext
 
   switch (actionId) {
     case "reschedule":
-    case "reschedule_request":
+    case "reschedule_request": {
       // Only apply minimum reschedule notice restriction if user is NOT the organizer
       // If user is an attendee (or not authenticated), apply the restriction
       const isUserOrganizer =
@@ -260,8 +253,26 @@ export function isActionDisabled(actionId: string, context: BookingActionContext
         isDisabledRescheduling ||
         isWithinMinimumNotice
       );
-    case "cancel":
-      return isDisabledCancelling || isBookingInPast || isCancelled || isRejected;
+    }
+    case "cancel": {
+      const isCancellationOrganizer = Boolean(
+        !isAttendee &&
+          booking.loggedInUser?.userId &&
+          booking.user?.id &&
+          booking.loggedInUser.userId === booking.user.id
+      );
+      return (
+        isDisabledCancelling ||
+        isBookingInPast ||
+        isCancelled ||
+        isRejected ||
+        isAttendeeBlockedByCancellationNotice({
+          isOrganizer: isCancellationOrganizer,
+          bookingStartTime: new Date(booking.startTime),
+          minimumCancellationNotice: booking.eventType.minimumCancellationNotice ?? null,
+        })
+      );
+    }
     case "view_recordings":
       return !(isBookingInPast && booking.status === BookingStatus.ACCEPTED && context.isCalVideoLocation);
     case "meeting_session_details":
